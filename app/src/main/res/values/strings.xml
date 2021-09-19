@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Weather Tracker</string>
+    <string name="app_label">Yash Raj</string>
     <string name="nav_header_desc">Navigation header</string>
 
     <string name="menu_map">Map</string>
@@ -17,4 +17,12 @@
     <string name="settings_fragment_locations_database_label"><b>Locations Database</b></string>
     <string name="settings_fragment_save_location_to_database_option">Save locations to database</string>
     <string name="settings_fragment_delete_database_option">Delete database</string>
+
+    <string name="app_name">WeathrTrackr</string>
+    <string name="developed_by_label"><b>Developed By</b></string>
+    <string name="developer_name">Yash Raj</string>
+    <string name="app_version_label"><b>Version</b></string>
+    <string name="app_version">Alpha-0.0.1</string>
+    <string name="about_label"><b>About</b></string>
+    <string name="about">This app will query the weather at your current location when you press the Floating Action Button (FAB). Your location is plotted on to a map. Clicking on the marker will display the time that you checked in at that location and the weather at the time of check in. This information is presented to you in the form of a Snackbar at the bottom of the screen.</string>
 </resources>
