@@ -228,6 +228,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         gMap = googleMap
+        gMap.clear()
         mLocationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 previousMarker = currentMarker
