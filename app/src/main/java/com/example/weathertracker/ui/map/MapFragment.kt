@@ -20,6 +20,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.weathertracker.MainActivity
 import com.example.weathertracker.R
+import com.example.weathertracker.data.CheckpointModel
 import com.example.weathertracker.data.DbQueryHelper
 import com.example.weathertracker.databinding.FragmentMapBinding
 import com.google.android.gms.location.*
@@ -185,7 +186,14 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         val lng = location.longitude
         val address = getAddress(lat, lng)
 
-        val newRowId = dbQueryHelper.addNewCheckpoint(location, address, weather)
+        val checkpoint = CheckpointModel()
+        checkpoint.setLat(lat)
+        checkpoint.setLng(lng)
+        checkpoint.setAddress(address)
+        checkpoint.setTemp(weather.first - 273)
+        checkpoint.setWeatherDesc(weather.second)
+
+        val newRowId = dbQueryHelper.addNewCheckpoint(checkpoint)
         if (newRowId == -1L) {
             Toast.makeText(
                 activity,
@@ -203,19 +211,19 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun fetchCheckpointsFromDb(): Map<LatLng, List<String>> {
+    private fun fetchCheckpointsFromDb(): List<CheckpointModel> {
         return dbQueryHelper.fetchAllCheckpoints()
     }
 
-    private fun deleteCheckpointFromDb(latLng: LatLng) {
-        val lat = latLng.latitude
-        val lng = latLng.longitude
-        dbQueryHelper.deleteCheckpoint(lat, lng)
-        Toast.makeText(
-            activity,
-            "Checkpoint deleted.",
-            Toast.LENGTH_SHORT
-        ).show()
+    private fun deleteCheckpointFromDb(id: String?) {
+        if (id != null) {
+            dbQueryHelper.deleteCheckpoint(id)
+            Toast.makeText(
+                activity,
+                "Checkpoint deleted.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
@@ -249,26 +257,30 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 fusedLocationClient.removeLocationUpdates(mLocationCallback)
             }
         }
-        val locations = fetchCheckpointsFromDb()
-        locations.forEach { location ->
+        val checkpoints = fetchCheckpointsFromDb()
+        checkpoints.forEach { checkpoint ->
+            val latLng = LatLng(checkpoint.getLat(), checkpoint.getLng())
             gMap.addMarker(
-                MarkerOptions().position(location.key)
-                    .title("${location.key.latitude}, ${location.key.longitude}").icon(
+                MarkerOptions().position(latLng)
+                    .title("${checkpoint.getLat()}, ${checkpoint.getLng()}").icon(
                         BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
                     )
             )
-            gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location.key, 15F))
+            gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15F))
         }
         gMap.setOnMarkerClickListener { marker ->
             if (marker != currentMarker) {
-                val key = marker.position
+                val checkpoint = checkpoints.find { checkpoint ->
+                    checkpoint.getLat() == marker.position.latitude &&
+                            checkpoint.getLng() == marker.position.longitude
+                }
                 val text =
-                    "Lat/Lng: (${key.latitude}, ${key.longitude})\n" +
-                            "You were here: ${locations[key]?.get(0)}\n" +
-                            "Temp: ${locations[key]?.get(1)}\u2103 (${locations[key]?.get(2)})"
-                Snackbar.make(binding.root, text, Snackbar.LENGTH_SHORT)
+                    "Lat/Lng: (${checkpoint?.getLat()}, ${checkpoint?.getLng()})\n" +
+                            "You were here: ${checkpoint?.getAddress()}\n" +
+                            "Temp: ${"%.2f".format(checkpoint?.getTemp())}\u2103 (${checkpoint?.getWeatherDesc()})"
+                Snackbar.make(binding.root, text, Snackbar.LENGTH_LONG)
                     .setAction("DELETE") {
-                        deleteCheckpointFromDb(key)
+                        deleteCheckpointFromDb(checkpoint?.getID())
                         marker.remove()
                     }
                     .show()

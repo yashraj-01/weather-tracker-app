@@ -2,39 +2,37 @@ package com.example.weathertracker.data
 
 import android.content.ContentValues
 import android.content.Context
-import android.location.Location
+import android.provider.BaseColumns
 import com.example.weathertracker.data.CheckpointContract.CheckpointEntry
 import com.google.android.gms.maps.model.LatLng
 
 class DbQueryHelper(context: Context) {
     private var dbHelper: CheckpointDbHelper = CheckpointDbHelper(context)
 
-    fun addNewCheckpoint(location: Location, address:String, weather: Pair<Double, String>): Long? {
+    fun addNewCheckpoint(checkpoint: CheckpointModel): Long? {
         val db = dbHelper.writableDatabase
-        val lat = location.latitude
-        val long = location.longitude
 
         val values = ContentValues().apply {
-            put(CheckpointEntry.COLUMN_NAME_LAT, lat)
-            put(CheckpointEntry.COLUMN_NAME_LONG, long)
-            put(CheckpointEntry.COLUMN_NAME_ADDRESS, address)
-            put(CheckpointEntry.COLUMN_NAME_TEMP, weather.first - 273)
-            put(CheckpointEntry.COLUMN_NAME_WEATHER_DESC, weather.second)
+            put(CheckpointEntry.COLUMN_NAME_LAT, checkpoint.getLat())
+            put(CheckpointEntry.COLUMN_NAME_LONG, checkpoint.getLng())
+            put(CheckpointEntry.COLUMN_NAME_ADDRESS, checkpoint.getAddress())
+            put(CheckpointEntry.COLUMN_NAME_TEMP, checkpoint.getTemp())
+            put(CheckpointEntry.COLUMN_NAME_WEATHER_DESC, checkpoint.getWeatherDesc())
         }
 
         return db?.insert(CheckpointEntry.TABLE_NAME, null, values)
     }
 
-    fun deleteCheckpoint(lat: Double, lng: Double) {
+    fun deleteCheckpoint(id: String) {
         val db = dbHelper.writableDatabase
-        val selection =
-            "${CheckpointEntry.COLUMN_NAME_LAT} = $lat AND ${CheckpointEntry.COLUMN_NAME_LONG} = $lng"
+        val selection = "${BaseColumns._ID} = $id"
         db.delete(CheckpointEntry.TABLE_NAME, selection, null)
     }
 
-    fun fetchAllCheckpoints(): Map<LatLng, List<String>>  {
+    fun fetchAllCheckpoints(): List<CheckpointModel> {
         val db = dbHelper.readableDatabase
         val projection = arrayOf(
+            BaseColumns._ID,
             CheckpointEntry.COLUMN_NAME_LAT,
             CheckpointEntry.COLUMN_NAME_LONG,
             CheckpointEntry.COLUMN_NAME_ADDRESS,
@@ -50,20 +48,29 @@ class DbQueryHelper(context: Context) {
             null,                   // don't filter by row groups
             null               // The sort order
         )
-        val locations = mutableMapOf<LatLng, List<String>>()
+        val checkpoints = mutableListOf<CheckpointModel>()
         with(cursor) {
             while (moveToNext()) {
+                val id = getString(getColumnIndexOrThrow(BaseColumns._ID))
                 val lat = getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_LAT))
-                val long = getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_LONG))
+                val lng = getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_LONG))
                 val address = getString(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_ADDRESS))
                 val weatherDesc =
                     getString(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_WEATHER_DESC))
-                val temp =
-                    getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_TEMP)).toString()
-                locations.putIfAbsent(LatLng(lat, long), listOf<String>(address, temp, weatherDesc))
+                val temp = getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_TEMP))
+
+                val checkpoint = CheckpointModel()
+                checkpoint.setID(id)
+                checkpoint.setLat(lat)
+                checkpoint.setLng(lng)
+                checkpoint.setAddress(address)
+                checkpoint.setTemp(temp)
+                checkpoint.setWeatherDesc(weatherDesc)
+
+                checkpoints.add(checkpoint)
             }
         }
         cursor.close()
-        return locations
+        return checkpoints
     }
 }
