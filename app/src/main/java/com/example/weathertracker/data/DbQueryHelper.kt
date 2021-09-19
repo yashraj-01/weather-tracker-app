@@ -96,4 +96,9 @@ class DbQueryHelper(context: Context) {
         cursor.close()
         return res
     }
+
+    fun deleteAllRecordsFromDatabase() {
+        val db = dbHelper.writableDatabase
+        db.execSQL("DELETE FROM ${CheckpointEntry.TABLE_NAME}")
+    }
 }
