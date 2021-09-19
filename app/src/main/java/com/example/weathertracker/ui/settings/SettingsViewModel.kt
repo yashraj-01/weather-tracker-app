@@ -1,13 +1,20 @@
 package com.example.weathertracker.ui.settings
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.databinding.ObservableField
 import androidx.lifecycle.ViewModel
+import com.example.weathertracker.util.SettingsHelper
 
-class SettingsViewModel : ViewModel() {
+class SettingsViewModel(private val settingsHelper: SettingsHelper) : ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is settings Fragment"
+    val isSaveCheckpointToDatabaseEnabled =
+        ObservableField<Boolean>(settingsHelper.getSaveCheckpointToDatabase())
+
+    fun onSaveCheckpointToDatabaseClicked() {
+        settingsHelper.setSaveCheckpointToDatabase(
+            !(settingsHelper.getSaveCheckpointToDatabase())
+        )
+        isSaveCheckpointToDatabaseEnabled.set(
+            settingsHelper.getSaveCheckpointToDatabase()
+        )
     }
-    val text: LiveData<String> = _text
 }

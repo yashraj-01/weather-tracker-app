@@ -13,4 +13,8 @@
     <string name="history_fragment_checkpoint_list_item_longitude"><b>Longitude: </b></string>
     <string name="history_fragment_checkpoint_list_item_temp"><b>Temperature: </b></string>
     <string name="history_fragment_checkpoint_list_item_weather"><b>Weather: </b></string>
+
+    <string name="settings_fragment_locations_database_label"><b>Locations Database</b></string>
+    <string name="settings_fragment_save_location_to_database_option">Save locations to database</string>
+    <string name="settings_fragment_delete_database_option">Delete database</string>
 </resources>

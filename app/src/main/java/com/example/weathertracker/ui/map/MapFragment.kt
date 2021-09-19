@@ -23,6 +23,7 @@ import com.example.weathertracker.R
 import com.example.weathertracker.data.CheckpointModel
 import com.example.weathertracker.data.DbQueryHelper
 import com.example.weathertracker.databinding.FragmentMapBinding
+import com.example.weathertracker.util.SettingsHelper
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -49,10 +50,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var dbQueryHelper: DbQueryHelper
     private lateinit var gMap: GoogleMap
-    private var previousMarker: Marker? = null
     private var currentMarker: Marker? = null
     private lateinit var geocoder: Geocoder
     private lateinit var mLocationCallback: LocationCallback
+    private lateinit var settingsHelper: SettingsHelper
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -63,6 +64,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             ViewModelProvider(this).get(MapViewModel::class.java)
 
         _binding = FragmentMapBinding.inflate(inflater, container, false)
+
+        settingsHelper = SettingsHelper.getInstance()
 
         dbQueryHelper = DbQueryHelper(this.requireContext())
 
@@ -153,7 +156,13 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             url,
             { response ->
                 result = getWeatherFromRequest(response)
-                addCheckpointToDb(location, result)
+                if (settingsHelper.getSaveCheckpointToDatabase())
+                    addCheckpointToDb(location, result)
+                else Toast.makeText(
+                    activity,
+                    "Save to database is disabled. Please enable it in the settings to save the checkpoint to the database.",
+                    Toast.LENGTH_SHORT
+                ).show()
             },
             {
                 Toast.makeText(
@@ -231,18 +240,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         gMap.clear()
         mLocationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                previousMarker = currentMarker
-                if (previousMarker != null) {
-                    val latLng = previousMarker!!.position
-                    gMap.addMarker(
-                        MarkerOptions().position(latLng)
-                            .title("${latLng.latitude}, ${latLng.longitude}")
-                            .icon(
-                                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
-                            )
-                    )
-                }
-                currentMarker?.remove()
+                currentMarker?.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
                 val locationList = locationResult.locations
                 if (locationList.isNotEmpty()) {
                     val location = locationList.last()

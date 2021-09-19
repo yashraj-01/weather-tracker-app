@@ -73,4 +73,27 @@ class DbQueryHelper(context: Context) {
         cursor.close()
         return checkpoints
     }
+
+    fun checkIfCheckpointIsSaved(lat: Double, lng: Double): Boolean {
+        val db = dbHelper.readableDatabase
+        val projection = arrayOf(
+            CheckpointEntry.COLUMN_NAME_LAT,
+            CheckpointEntry.COLUMN_NAME_LONG,
+        )
+        val selection =
+            "${CheckpointEntry.COLUMN_NAME_LAT} = $lat AND ${CheckpointEntry.COLUMN_NAME_LONG} = $lng"
+        val cursor = db.query(
+            CheckpointEntry.TABLE_NAME,   // The table to query
+            projection,             // The array of columns to return (pass null to get all)
+            selection,              // The columns for the WHERE clause
+            null,          // The values for the WHERE clause
+            null,                   // don't group the rows
+            null,                   // don't filter by row groups
+            null               // The sort order
+        )
+        var res = false
+        res = cursor.count > 0
+        cursor.close()
+        return res
+    }
 }

@@ -4,11 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import com.example.weathertracker.databinding.FragmentSettingsBinding
+import com.example.weathertracker.util.SettingsHelper
 
 class SettingsFragment : Fragment() {
 
@@ -19,22 +17,25 @@ class SettingsFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    private lateinit var settingsHelper: SettingsHelper
+
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View? {
-        settingsViewModel =
-                ViewModelProvider(this).get(SettingsViewModel::class.java)
+        settingsHelper = SettingsHelper.getInstance()
+
+        settingsViewModel = SettingsViewModel(settingsHelper)
 
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
-        val root: View = binding.root
 
-        val textView: TextView = binding.textSettings
-        settingsViewModel.text.observe(viewLifecycleOwner, Observer {
-            textView.text = it
-        })
-        return root
+        binding.let {
+            it.lifecycleOwner = this
+            it.viewModel = settingsViewModel
+        }
+
+        return binding.root
     }
 
     override fun onDestroyView() {
