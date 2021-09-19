@@ -8,6 +8,11 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.weathertracker.data.CheckpointModel
+import com.example.weathertracker.data.DbQueryHelper
 import com.example.weathertracker.databinding.FragmentHistoryBinding
 
 class HistoryFragment : Fragment() {
@@ -19,22 +24,31 @@ class HistoryFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    private val checkpointList = mutableListOf<CheckpointModel>()
+    private lateinit var dbQueryHelper: DbQueryHelper
+    private lateinit var recyclerView: RecyclerView
+
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View? {
         historyViewModel =
-                ViewModelProvider(this).get(HistoryViewModel::class.java)
+            ViewModelProvider(this).get(HistoryViewModel::class.java)
 
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
-        val root: View = binding.root
 
-        val textView: TextView = binding.textHistory
-        historyViewModel.text.observe(viewLifecycleOwner, Observer {
-            textView.text = it
-        })
-        return root
+        dbQueryHelper = DbQueryHelper(this.requireContext())
+        recyclerView = binding.checkpointRecyclerView
+        checkpointList.addAll(dbQueryHelper.fetchAllCheckpoints())
+        recyclerView.layoutManager = LinearLayoutManager(
+            this.requireContext(), LinearLayoutManager.VERTICAL, false
+        )
+        recyclerView.itemAnimator = DefaultItemAnimator()
+        val checkpointAdapter = CheckpointRecyclerViewAdapter(this.requireContext(), checkpointList)
+        recyclerView.adapter = checkpointAdapter
+
+        return binding.root
     }
 
     override fun onDestroyView() {
