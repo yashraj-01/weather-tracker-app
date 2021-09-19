@@ -2,7 +2,6 @@ package com.example.weathertracker.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
@@ -21,8 +20,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.weathertracker.MainActivity
 import com.example.weathertracker.R
-import com.example.weathertracker.data.CheckpointContract.CheckpointEntry
-import com.example.weathertracker.data.CheckpointDbHelper
+import com.example.weathertracker.data.DbQueryHelper
 import com.example.weathertracker.databinding.FragmentMapBinding
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -48,7 +46,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private val binding get() = _binding!!
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var dbHelper: CheckpointDbHelper
+    private lateinit var dbQueryHelper: DbQueryHelper
     private lateinit var gMap: GoogleMap
     private var previousMarker: Marker? = null
     private var currentMarker: Marker? = null
@@ -65,7 +63,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         _binding = FragmentMapBinding.inflate(inflater, container, false)
 
-        dbHelper = CheckpointDbHelper(this.requireContext())
+        dbQueryHelper = DbQueryHelper(this.requireContext())
 
         val mapFragment: SupportMapFragment = childFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -183,20 +181,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun addCheckpointToDb(location: Location, weather: Pair<Double, String>) {
-        val db = dbHelper.writableDatabase
         val lat = location.latitude
-        val long = location.longitude
-        val address = getAddress(lat, long)
+        val lng = location.longitude
+        val address = getAddress(lat, lng)
 
-        val values = ContentValues().apply {
-            put(CheckpointEntry.COLUMN_NAME_LAT, lat)
-            put(CheckpointEntry.COLUMN_NAME_LONG, long)
-            put(CheckpointEntry.COLUMN_NAME_ADDRESS, address)
-            put(CheckpointEntry.COLUMN_NAME_TEMP, weather.first - 273)
-            put(CheckpointEntry.COLUMN_NAME_WEATHER_DESC, weather.second)
-        }
-
-        val newRowId = db?.insert(CheckpointEntry.TABLE_NAME, null, values)
+        val newRowId = dbQueryHelper.addNewCheckpoint(location, address, weather)
         if (newRowId == -1L) {
             Toast.makeText(
                 activity,
@@ -206,56 +195,22 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         } else {
             Toast.makeText(
                 activity,
-                "Lat/Lng: (${values[CheckpointEntry.COLUMN_NAME_LAT]}, ${values[CheckpointEntry.COLUMN_NAME_LONG]})\n" +
-                        "You were here: ${values[CheckpointEntry.COLUMN_NAME_ADDRESS]}\n" +
-                        "Temp: ${"%.2f".format(values[CheckpointEntry.COLUMN_NAME_TEMP])}\u2103 (${values[CheckpointEntry.COLUMN_NAME_WEATHER_DESC]})",
+                "Lat/Lng: (${lat}, ${lng})\n" +
+                        "You were here: ${address}\n" +
+                        "Temp: ${"%.2f".format(weather.first)}\u2103 (${weather.second})",
                 Toast.LENGTH_SHORT
             ).show()
         }
     }
 
     private fun fetchCheckpointsFromDb(): Map<LatLng, List<String>> {
-        val db = dbHelper.readableDatabase
-        val projection = arrayOf(
-            CheckpointEntry.COLUMN_NAME_LAT,
-            CheckpointEntry.COLUMN_NAME_LONG,
-            CheckpointEntry.COLUMN_NAME_ADDRESS,
-            CheckpointEntry.COLUMN_NAME_TEMP,
-            CheckpointEntry.COLUMN_NAME_WEATHER_DESC
-        )
-        val cursor = db.query(
-            CheckpointEntry.TABLE_NAME,   // The table to query
-            projection,             // The array of columns to return (pass null to get all)
-            null,              // The columns for the WHERE clause
-            null,          // The values for the WHERE clause
-            null,                   // don't group the rows
-            null,                   // don't filter by row groups
-            null               // The sort order
-        )
-        val locations = mutableMapOf<LatLng, List<String>>()
-        with(cursor) {
-            while (moveToNext()) {
-                val lat = getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_LAT))
-                val long = getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_LONG))
-                val address = getString(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_ADDRESS))
-                val weatherDesc =
-                    getString(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_WEATHER_DESC))
-                val temp =
-                    getDouble(getColumnIndexOrThrow(CheckpointEntry.COLUMN_NAME_TEMP)).toString()
-                locations.putIfAbsent(LatLng(lat, long), listOf<String>(address, temp, weatherDesc))
-            }
-        }
-        cursor.close()
-        return locations
+        return dbQueryHelper.fetchAllCheckpoints()
     }
 
     private fun deleteCheckpointFromDb(latLng: LatLng) {
-        val db = dbHelper.writableDatabase
         val lat = latLng.latitude
         val lng = latLng.longitude
-        val selection =
-            "${CheckpointEntry.COLUMN_NAME_LAT} = $lat AND ${CheckpointEntry.COLUMN_NAME_LONG} = $lng"
-        db.delete(CheckpointEntry.TABLE_NAME, selection, null)
+        dbQueryHelper.deleteCheckpoint(lat, lng)
         Toast.makeText(
             activity,
             "Checkpoint deleted.",
@@ -269,10 +224,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             override fun onLocationResult(locationResult: LocationResult) {
                 previousMarker = currentMarker
                 if (previousMarker != null) {
-                    val latlng = previousMarker!!.position
+                    val latLng = previousMarker!!.position
                     gMap.addMarker(
-                        MarkerOptions().position(latlng)
-                            .title("${latlng.latitude}, ${latlng.longitude}")
+                        MarkerOptions().position(latLng)
+                            .title("${latLng.latitude}, ${latLng.longitude}")
                             .icon(
                                 BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
                             )
