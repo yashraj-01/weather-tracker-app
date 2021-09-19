@@ -40,7 +40,6 @@ import kotlin.math.round
 
 class MapFragment : Fragment(), OnMapReadyCallback {
 
-    private lateinit var mapViewModel: MapViewModel
     private var _binding: FragmentMapBinding? = null
 
     // This property is only valid between onCreateView and
@@ -60,9 +59,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        mapViewModel =
-            ViewModelProvider(this).get(MapViewModel::class.java)
-
         _binding = FragmentMapBinding.inflate(inflater, container, false)
 
         settingsHelper = SettingsHelper.getInstance()

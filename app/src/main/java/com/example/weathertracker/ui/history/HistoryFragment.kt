@@ -17,7 +17,6 @@ import com.example.weathertracker.databinding.FragmentHistoryBinding
 
 class HistoryFragment : Fragment() {
 
-    private lateinit var historyViewModel: HistoryViewModel
     private var _binding: FragmentHistoryBinding? = null
 
     // This property is only valid between onCreateView and
@@ -33,9 +32,6 @@ class HistoryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        historyViewModel =
-            ViewModelProvider(this).get(HistoryViewModel::class.java)
-
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
 
         dbQueryHelper = DbQueryHelper(this.requireContext())

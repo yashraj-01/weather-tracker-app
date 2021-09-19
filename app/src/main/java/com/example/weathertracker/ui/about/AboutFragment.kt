@@ -12,7 +12,6 @@ import com.example.weathertracker.databinding.FragmentAboutBinding
 
 class AboutFragment : Fragment() {
 
-    private lateinit var aboutViewModel: AboutViewModel
     private var _binding: FragmentAboutBinding? = null
 
     // This property is only valid between onCreateView and
@@ -24,9 +23,6 @@ class AboutFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        aboutViewModel =
-            ViewModelProvider(this).get(AboutViewModel::class.java)
-
         _binding = FragmentAboutBinding.inflate(inflater, container, false)
 
         return binding.root
